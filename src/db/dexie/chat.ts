@@ -25,7 +25,7 @@ function searchQueryInContent(content: string, query: string): boolean {
   const normalizedQuery = query.toLowerCase().trim()
 
   const wordBoundaryPattern = new RegExp(
-    `\\b${normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    `\\b${normalizedQuery.replace(/[.*+?^${}()|[\]\\\\]/g, "\\\\$&")}\\b`,
     "i"
   )
 
@@ -147,13 +147,20 @@ export class PageAssistDatabase {
 
   async getChatHistory(id: string): Promise<MessageHistory> {
     const modelNicknames = await getAllModelNicknames()
+    const chatSettings = await db.chatHistories.get(id)
     const messages = await db.messages.where("history_id").equals(id).toArray()
 
     return messages.map((message) => {
       return {
         ...message,
-        modelName: modelNicknames[message.name]?.model_name || message.name,
-        modelImage: modelNicknames[message.name]?.model_avatar || undefined
+        modelName:
+          chatSettings?.model_display_name ||
+          modelNicknames[message.name]?.model_name ||
+          message.name,
+        modelImage:
+          chatSettings?.model_avatar ||
+          modelNicknames[message.name]?.model_avatar ||
+          undefined
       }
     })
   }
@@ -214,6 +221,28 @@ export class PageAssistDatabase {
 
   async updateChatHistoryCreatedAt(id: string, createdAt: number) {
     await db.chatHistories.update(id, { createdAt })
+  }
+
+  async updateChatModelSettings(
+    history_id: string,
+    model_avatar?: string,
+    model_display_name?: string
+  ) {
+    await db.chatHistories.update(history_id, {
+      model_avatar,
+      model_display_name
+    })
+  }
+
+  async getChatModelSettings(history_id: string): Promise<{
+    model_avatar?: string
+    model_display_name?: string
+  }> {
+    const history = await db.chatHistories.get(history_id)
+    return {
+      model_avatar: history?.model_avatar,
+      model_display_name: history?.model_display_name
+    }
   }
 
   async addMessage(message: Message) {

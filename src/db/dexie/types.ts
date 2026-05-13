@@ -14,6 +14,8 @@ export type HistoryInfo = {
   last_used_prompt?: LastUsedModelType
   model_id?: string
   folder_id?: string
+  model_avatar?: string
+  model_display_name?: string
 }
 
 export type WebSearch = {
